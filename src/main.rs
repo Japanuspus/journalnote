@@ -31,6 +31,7 @@ fn main() {
 
     let note_file = note_folder.join(path::Path::new(&note_file_name(&friday)));
 
+    // Buffer for all additions to file, to make sure we get an atomic write.
     let mut buffer = String::new();
     let mut has_today: bool = false;
 
@@ -45,7 +46,7 @@ fn main() {
                     .open(&note_file).expect("Failed to open existing file");
                 let day_header = format!("## {}", format_date(&today));
                 for line in std::io::BufReader::new(&existing_file).lines() {
-                    if line.unwrap().starts_with(&day_header) {
+                    if line.expect("Invalid UTF8").starts_with(&day_header) {
                         has_today = true;
                         break;
                     }
@@ -59,12 +60,17 @@ fn main() {
             },
             _ => panic!("Failed to create new file")
         };
+    
     if ! has_today {
         buffer.push_str(&format!("## {}\n\n", format_date(&today)));
     }
-    for a in std::env::args().skip(1) {
-        buffer.push_str(&format!("{}\n", a));
+
+    let message = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+    if !message.is_empty() {
+        buffer.push_str(&format!("{}\n", message));
     }
+    
+    // This write should be atomic...
     file.write_all(buffer.as_bytes()).expect("Unable to write to file");
 }
 
