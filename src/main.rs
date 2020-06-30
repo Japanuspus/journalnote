@@ -18,7 +18,8 @@ fn note_file_name<D: chrono::Datelike>(friday: &D) -> String {
 }
 
 fn main() {
-    let today = chrono::offset::Local::now().date();
+    let now = chrono::offset::Local::now();
+    let today = now.date();
     let friday = today + chrono::Duration::days(days_till_friday(&today) as i64);
 
     let note_folder_str = env::var("JOURNAL_NOTE_FOLDER").expect("Environment variable JOURNAL_NOTE_FOLDER must be defined");
@@ -34,6 +35,7 @@ fn main() {
     // Buffer for all additions to file, to make sure we get an atomic write.
     let mut buffer = String::new();
     let mut has_today: bool = false;
+    let day_header = format!("## {}", format_date(&today));
 
     let mut file = match fs::OpenOptions::new()
         .write(true)
@@ -44,7 +46,6 @@ fn main() {
                     .read(true)
                     .append(true)
                     .open(&note_file).expect("Failed to open existing file");
-                let day_header = format!("## {}", format_date(&today));
                 for line in std::io::BufReader::new(&existing_file).lines() {
                     if line.expect("Invalid UTF8").starts_with(&day_header) {
                         has_today = true;
@@ -62,12 +63,12 @@ fn main() {
         };
     
     if ! has_today {
-        buffer.push_str(&format!("## {}\n\n", format_date(&today)));
+        buffer.push_str(&format!("\n{} - {}\n\n", &day_header, &today.format("%a")));
     }
 
     let message = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
     if !message.is_empty() {
-        buffer.push_str(&format!("{}\n", message));
+        buffer.push_str(&format!("{} - {}\n", &now.format("%H:%M"), message));
     }
     
     // This write should be atomic...
