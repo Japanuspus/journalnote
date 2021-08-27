@@ -35,7 +35,7 @@ fn format_date<D: Datelike>(d: &D) -> String {
 }
 
 fn note_file_name<D: Datelike>(friday: &D) -> String {
-    format!("{}-journal.txt", format_date(friday))
+    format!("{}-journal.md", format_date(friday))
 }
 
 impl Config {
