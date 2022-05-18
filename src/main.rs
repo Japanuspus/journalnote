@@ -14,7 +14,7 @@ fn days_till_friday<D: chrono::Datelike>(d: &D) -> u32 {
 }
 
 fn note_file_name<D: chrono::Datelike>(friday: &D) -> String {
-    format!("{}-journal.txt", format_date(friday))
+    format!("{} journal.md", format_date(friday))
 }
 
 fn main() {
