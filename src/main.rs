@@ -1,4 +1,6 @@
 use chrono;
+// use std::fmt::Write;
+// use std::io::Write;
 use std::path;
 use std::fs;
 use std::io::{BufRead, Write};
@@ -66,11 +68,14 @@ fn main() {
         buffer.push_str(&format!("\n{} - {}\n\n", &day_header, &today.format("%a")));
     }
 
-    let message = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
-    if !message.is_empty() {
-        buffer.push_str(&format!("{} - {}\n", &now.format("%H:%M"), message));
+    let mut args = std::env::args().skip(1);
+    if let Some(header) = args.next() {
+        buffer.push_str(&format!("\n### {} - {}\n", &now.format("%H:%M"), header));
+        let message = args.collect::<Vec<_>>().join("\n");
+        if !message.is_empty() {
+            buffer.push_str(&format!("\n{}\n", message));
+        }
     }
-    
     // This write should be atomic...
     file.write_all(buffer.as_bytes()).expect("Unable to write to file");
 }
