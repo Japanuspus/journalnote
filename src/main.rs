@@ -1,4 +1,5 @@
 use chrono;
+use clap::Parser;
 // use std::fmt::Write;
 // use std::io::Write;
 use std::path;
@@ -19,7 +20,19 @@ fn note_file_name<D: chrono::Datelike>(friday: &D) -> String {
     format!("{} journal.md", format_date(friday))
 }
 
+/// Journal note - add entry to todays journal file 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Header to use for content
+    #[arg(long)]
+    header: Option<String>,
+    /// Content lines
+    content: Vec<String>
+}
+
 fn main() {
+    let args = Args::parse();
     let now = chrono::offset::Local::now();
     let today = now.date();
     let friday = today + chrono::Duration::days(days_till_friday(&today) as i64);
@@ -64,17 +77,23 @@ fn main() {
             _ => panic!("Failed to create new file")
         };
     
+    let mut clean: bool = false;
+        
     if ! has_today {
         buffer.push_str(&format!("\n{} - {}\n\n", &day_header, &today.format("%a")));
+        clean = true;
     }
 
-    let mut args = std::env::args().skip(1);
-    if let Some(header) = args.next() {
-        buffer.push_str(&format!("\n### {} - {}\n", &now.format("%H:%M"), header));
-        let message = args.collect::<Vec<_>>().join("\n");
-        if !message.is_empty() {
-            buffer.push_str(&format!("\n{}\n", message));
+    if let Some(header) = args.header {
+        buffer.push_str(&format!("\n### {} - {}\n\n", &now.format("%H:%M"), header));
+        clean = true;
+    }
+    let message = args.content.join("\n");
+    if !message.is_empty() {
+        if !clean {
+            buffer.push_str("\n");
         }
+        buffer.push_str(&format!("{}\n", message));
     }
     // This write should be atomic...
     file.write_all(buffer.as_bytes()).expect("Unable to write to file");
