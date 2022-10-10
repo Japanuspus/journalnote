@@ -4,7 +4,7 @@ use clap::Parser;
 // use std::io::Write;
 use std::path;
 use std::fs;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Read, Write, Seek, SeekFrom};
 use std::env;
 
 fn format_date<D: chrono::Datelike>(d: &D) -> String {
@@ -50,6 +50,7 @@ fn main() {
     // Buffer for all additions to file, to make sure we get an atomic write.
     let mut buffer = String::new();
     let mut has_today: bool = false;
+    let mut clean_line: bool = false; //
     let day_header = format!("## {}", format_date(&today));
 
     let mut file = match fs::OpenOptions::new()
@@ -57,7 +58,7 @@ fn main() {
         .create_new(true)
         .open(&note_file) {
             Err(ref e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                let existing_file = fs::OpenOptions::new()
+                let mut existing_file = fs::OpenOptions::new()
                     .read(true)
                     .append(true)
                     .open(&note_file).expect("Failed to open existing file");
@@ -66,31 +67,39 @@ fn main() {
                         has_today = true;
                         break;
                     }
-                }    
+                }
+                {
+                    let mut buffer = [0; 1];
+                    existing_file.seek(SeekFrom::End(-1)).expect("Unable to seek to end of file");
+                    match existing_file.read(&mut buffer) {
+                        Ok(1) => {if buffer[0]==b'\n' {clean_line=true;}},
+                        _ => panic!("Could not read end of file"),
+                    }    
+                }
                 existing_file
             },
             Ok(f) => {
                 buffer.push_str(&format!("# Journal for week ending at {}\n\n", 
                     format_date(&friday)));
+                clean_line = true;
                 f
             },
             _ => panic!("Failed to create new file")
         };
     
-    let mut clean: bool = false;
         
     if ! has_today {
         buffer.push_str(&format!("\n{} - {}\n\n", &day_header, &today.format("%a")));
-        clean = true;
+        clean_line = true;
     }
 
     if let Some(header) = args.header {
         buffer.push_str(&format!("\n### {} - {}\n\n", &now.format("%H:%M"), header));
-        clean = true;
+        clean_line = true;
     }
     let message = args.content.join("\n");
     if !message.is_empty() {
-        if !clean {
+        if !clean_line {
             buffer.push_str("\n");
         }
         buffer.push_str(&format!("{}\n", message));
