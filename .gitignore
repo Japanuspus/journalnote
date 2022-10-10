@@ -1,2 +1,3 @@
 /target
 /*.cmd
+.DS_Store
