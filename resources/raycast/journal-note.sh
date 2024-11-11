@@ -19,7 +19,7 @@ jn=/Users/janus/.cargo/bin/journalnote
 
 if [ -z "$1" ]
 then
-  "$jn" "$2"
+  "$jn" -- "$2"
 else
-  "$jn" --header "$1" "$2"
+  "$jn" --header "$1" -- "$2"
 fi
