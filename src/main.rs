@@ -56,6 +56,7 @@ fn file_seek_existing(note_file: &PathBuf, day_header: &str) -> anyhow::Result<(
     {
         let _ = existing_file.seek_relative(-1);
     }
+
     Ok((existing_file, has_today))
 }
 
@@ -123,7 +124,7 @@ fn main() -> anyhow::Result<()> {
     }
     if let Some(header) = args.header {
         allow_continuation = false;
-        buffer.push_str(&format!("\n### {} - {}\n", &now.format("%H:%M"), header));
+        buffer.push_str(&format!("\n\n### {} - {}\n", &now.format("%H:%M"), header));
     }
 
     if !message.content.is_empty() {
